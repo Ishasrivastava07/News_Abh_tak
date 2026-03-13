@@ -167,7 +167,7 @@ clf, reg_s, reg_t, les, sc, acc = train_models(df)
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 📡 News Integrity\nMonitor")
+    st.markdown("## 📡 News Integrity\\nMonitor")
     st.markdown("---")
 
     page = st.radio(
@@ -407,7 +407,7 @@ if page == "🏠 Media Pulse":
             layers=[layer, text_layer],
             initial_view_state=view,
             tooltip=tooltip,
-            map_style="mapbox://styles/mapbox/dark-v10",
+            map_style=None,
         )
     )
 
@@ -595,7 +595,7 @@ elif page == "🔬 Influence Decoder":
             layers=[fake_layer, auth_layer],
             initial_view_state=view2,
             tooltip=tooltip2,
-            map_style="mapbox://styles/mapbox/dark-v10",
+            map_style=None,
         )
     )
 
@@ -735,7 +735,7 @@ elif page == "🔮 Viewer Intelligence":
 
     st.markdown("---")
     st.markdown(
-        "<div class=\"sec-head\">🗺️ Viewer's Predicted Emotional Zone — India Map</div>",
+        "<div class=\\"sec-head\\">🗺️ Viewer's Predicted Emotional Zone — India Map</div>",
         unsafe_allow_html=True,
     )
 
@@ -787,7 +787,7 @@ elif page == "🔮 Viewer Intelligence":
             layers=[pulse_layer, txt_layer],
             initial_view_state=view3,
             tooltip=tooltip3,
-            map_style="mapbox://styles/mapbox/dark-v10",
+            map_style=None,
         )
     )
 
