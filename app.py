@@ -104,7 +104,7 @@ def load_data():
     for name in candidates:
         if Path(name).exists():
             df = pd.read_csv(name)
-            df["Month_dt"] = pd.to_datetime(df["MonthYear"], format="%b-%Y")
+            df["Month_dt"] = pd.to_datetime(df["Month_Year"], format="%b-%Y")
             df["Year"] = df["Month_dt"].dt.year
             return df
 
@@ -114,11 +114,11 @@ def load_data():
 @st.cache_resource
 def train_models(df):
     encode_cols = [
-        "NewsVerdict",
-        "ChannelWatched",
-        "AnchorName",
-        "NewsCategory",
-        "ConsumptionFrequency",
+        "News_Verdict",
+        "Channel_Watched",
+        "Anchor_Name",
+        "News_Category",
+        "Consumption_Frequency",
     ]
     les = {c: LabelEncoder() for c in encode_cols}
 
@@ -127,23 +127,23 @@ def train_models(df):
         df2[c + "_enc"] = le.fit_transform(df2[c])
 
     feats = [
-        "ChannelWatched_enc",
-        "AnchorName_enc",
-        "NewsCategory_enc",
-        "ConsumptionFrequency_enc",
-        "TRPScore",
-        "SensationalismScore",
-        "FakeUnitsConsumed",
-        "AuthenticUnitsConsumed",
+        "Channel_Watched_enc",
+        "Anchor_Name_enc",
+        "News_Category_enc",
+        "Consumption_Frequency_enc",
+        "TRP_Score",
+        "Sensationalism_Score",
+        "Fake_Units_Consumed",
+        "Authentic_Units_Consumed",
     ]
 
     X = df2[feats].values
     sc = StandardScaler()
     X_s = sc.fit_transform(X)
 
-    y_cls = df2["NewsVerdict_enc"].values
-    y_sent = df2["SentimentScore"].values
-    y_trust = df2["TrustScore"].values
+    y_cls = df2["News_Verdict_enc"].values
+    y_sent = df2["Sentiment_Score"].values
+    y_trust = df2["Trust_Score"].values
 
     Xtr, Xte, ytr, yte = train_test_split(
         X_s, y_cls, test_size=0.2, random_state=42
@@ -186,19 +186,19 @@ with st.sidebar:
 
     sel_ch = st.multiselect(
         "Channel",
-        df["ChannelWatched"].unique().tolist(),
-        default=df["ChannelWatched"].unique().tolist(),
+        df["Channel_Watched"].unique().tolist(),
+        default=df["Channel_Watched"].unique().tolist(),
     )
     sel_an = st.multiselect(
         "Anchor",
-        df["AnchorName"].unique().tolist(),
-        default=df["AnchorName"].unique().tolist(),
+        df["Anchor_Name"].unique().tolist(),
+        default=df["Anchor_Name"].unique().tolist(),
     )
     sel_yr = st.slider("Year Range", 2022, 2025, (2022, 2025))
     sel_cat = st.multiselect(
         "Category",
-        df["NewsCategory"].unique().tolist(),
-        default=df["NewsCategory"].unique().tolist(),
+        df["News_Category"].unique().tolist(),
+        default=df["News_Category"].unique().tolist(),
     )
 
     st.markdown("---")
@@ -206,10 +206,10 @@ with st.sidebar:
     st.caption("📊 2,500 synthetic viewer records")
 
 fdf = df[
-    df["ChannelWatched"].isin(sel_ch)
-    & df["AnchorName"].isin(sel_an)
+    df["Channel_Watched"].isin(sel_ch)
+    & df["Anchor_Name"].isin(sel_an)
     & df["Year"].between(sel_yr[0], sel_yr[1])
-    & df["NewsCategory"].isin(sel_cat)
+    & df["News_Category"].isin(sel_cat)
 ].copy()
 
 if fdf.empty:
@@ -225,24 +225,24 @@ if page == "🏠 Media Pulse":
 
     c1, c2, c3, c4, c5 = st.columns(5)
     card(c1, f"{len(fdf):,}", "Viewers Tracked", "#6c63ff")
-    card(c2, f"{(fdf['NewsVerdict'] == 'Fake').mean() * 100:.1f}%", "Fake News Rate", "#ef4444")
-    card(c3, f"{fdf['SentimentScore'].mean():+.2f}", "Avg Sentiment", "#10b981")
-    card(c4, f"{fdf['TrustScore'].mean():.1f}/10", "Avg Trust Score", "#f59e0b")
-    card(c5, f"{fdf['KnowledgeAccuracyPct'].mean():.1f}%", "Avg Knowledge", "#3b82f6")
+    card(c2, f"{(fdf['News_Verdict'] == 'Fake').mean() * 100:.1f}%", "Fake News Rate", "#ef4444")
+    card(c3, f"{fdf['Sentiment_Score'].mean():+.2f}", "Avg Sentiment", "#10b981")
+    card(c4, f"{fdf['Trust_Score'].mean():.1f}/10", "Avg Trust Score", "#f59e0b")
+    card(c5, f"{fdf['Knowledge_Accuracy_Pct'].mean():.1f}%", "Avg Knowledge", "#3b82f6")
 
     st.markdown("---")
     r1c1, r1c2 = st.columns(2)
 
     with r1c1:
         st.markdown('<div class="sec-head">📰 Verdict Breakdown</div>', unsafe_allow_html=True)
-        vc = fdf["NewsVerdict"].value_counts().reset_index()
-        vc.columns = ["NewsVerdict", "count"]
+        vc = fdf["News_Verdict"].value_counts().reset_index()
+        vc.columns = ["News_Verdict", "count"]
 
         fig = px.pie(
             vc,
             values="count",
-            names="NewsVerdict",
-            color="NewsVerdict",
+            names="News_Verdict",
+            color="News_Verdict",
             color_discrete_map=VERDICT_COLORS,
             hole=0.4,
         )
@@ -253,19 +253,19 @@ if page == "🏠 Media Pulse":
     with r1c2:
         st.markdown('<div class="sec-head">📺 Fake News Rate by Channel</div>', unsafe_allow_html=True)
         ch_fake = (
-            fdf.groupby("ChannelWatched")
-            .apply(lambda x: (x["NewsVerdict"] == "Fake").mean() * 100)
+            fdf.groupby("Channel_Watched")
+            .apply(lambda x: (x["News_Verdict"] == "Fake").mean() * 100)
             .reset_index(name="Fake_Rate")
             .sort_values("Fake_Rate")
         )
         fig2 = px.bar(
             ch_fake,
             x="Fake_Rate",
-            y="ChannelWatched",
+            y="Channel_Watched",
             orientation="h",
             color="Fake_Rate",
             color_continuous_scale="RdYlGn_r",
-            labels={"Fake_Rate": "Fake News %", "ChannelWatched": ""},
+            labels={"Fake_Rate": "Fake News %", "Channel_Watched": ""},
         )
         fig2.update_layout(**PLT, height=320, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
@@ -275,7 +275,7 @@ if page == "🏠 Media Pulse":
     with r2c1:
         st.markdown('<div class="sec-head">📅 Monthly Sentiment Trend</div>', unsafe_allow_html=True)
         m = (
-            fdf.groupby("Month_dt")["SentimentScore"]
+            fdf.groupby("Month_dt")["Sentiment_Score"]
             .mean()
             .reset_index()
             .sort_values("Month_dt")
@@ -285,8 +285,8 @@ if page == "🏠 Media Pulse":
         fig3 = px.line(
             m,
             x="lbl",
-            y="SentimentScore",
-            labels={"SentimentScore": "Avg Sentiment", "lbl": ""},
+            y="Sentiment_Score",
+            labels={"Sentiment_Score": "Avg Sentiment", "lbl": ""},
         )
         fig3.add_hline(
             y=0,
@@ -307,24 +307,24 @@ if page == "🏠 Media Pulse":
     with r2c2:
         st.markdown('<div class="sec-head">🎙️ Avg News Units by Anchor</div>', unsafe_allow_html=True)
         anc = (
-            fdf.groupby("AnchorName")[["FakeUnitsConsumed", "AuthenticUnitsConsumed"]]
+            fdf.groupby("Anchor_Name")[["Fake_Units_Consumed", "Authentic_Units_Consumed"]]
             .mean()
             .reset_index()
-            .sort_values("FakeUnitsConsumed", ascending=False)
+            .sort_values("Fake_Units_Consumed", ascending=False)
         )
 
         fig4 = go.Figure(
             [
                 go.Bar(
                     name="Fake",
-                    x=anc["AnchorName"],
-                    y=anc["FakeUnitsConsumed"],
+                    x=anc["Anchor_Name"],
+                    y=anc["Fake_Units_Consumed"],
                     marker_color="#ef4444",
                 ),
                 go.Bar(
                     name="Authentic",
-                    x=anc["AnchorName"],
-                    y=anc["AuthenticUnitsConsumed"],
+                    x=anc["Anchor_Name"],
+                    y=anc["Authentic_Units_Consumed"],
                     marker_color="#10b981",
                 ),
             ]
@@ -347,9 +347,9 @@ if page == "🏠 Media Pulse":
     reg_stats = (
         fdf.groupby("Region")
         .agg(
-            Fake_Rate=("NewsVerdict", lambda x: (x == "Fake").mean() * 100),
-            Avg_Sentiment=("SentimentScore", "mean"),
-            Viewers=("ViewerID", "count"),
+            Fake_Rate=("News_Verdict", lambda x: (x == "Fake").mean() * 100),
+            Avg_Sentiment=("Sentiment_Score", "mean"),
+            Viewers=("Viewer_ID", "count"),
         )
         .reset_index()
     )
@@ -423,13 +423,13 @@ elif page == "🔬 Influence Decoder":
     with d1:
         st.markdown('<div class="sec-head">🔥 Correlation Matrix</div>', unsafe_allow_html=True)
         num_cols = [
-            "TRPScore",
-            "SensationalismScore",
-            "FakeUnitsConsumed",
-            "AuthenticUnitsConsumed",
-            "SentimentScore",
-            "TrustScore",
-            "KnowledgeAccuracyPct",
+            "TRP_Score",
+            "Sensationalism_Score",
+            "Fake_Units_Consumed",
+            "Authentic_Units_Consumed",
+            "Sentiment_Score",
+            "Trust_Score",
+            "Knowledge_Accuracy_Pct",
         ]
         labels = ["TRP", "Sensational", "Fake", "Authentic", "Sentiment", "Trust", "Knowledge"]
         corr = fdf[num_cols].corr().round(2)
@@ -456,12 +456,12 @@ elif page == "🔬 Influence Decoder":
             unsafe_allow_html=True,
         )
         bs = (
-            fdf.groupby("ChannelWatched")
+            fdf.groupby("Channel_Watched")
             .agg(
-                Avg_TRP=("TRPScore", "mean"),
-                Fake_Rate=("NewsVerdict", lambda x: (x == "Fake").mean() * 100),
-                Avg_Sent=("SentimentScore", "mean"),
-                Viewers=("ViewerID", "count"),
+                Avg_TRP=("TRP_Score", "mean"),
+                Fake_Rate=("News_Verdict", lambda x: (x == "Fake").mean() * 100),
+                Avg_Sent=("Sentiment_Score", "mean"),
+                Viewers=("Viewer_ID", "count"),
             )
             .reset_index()
         )
@@ -472,7 +472,7 @@ elif page == "🔬 Influence Decoder":
             y="Fake_Rate",
             size="Viewers",
             color="Avg_Sent",
-            text="ChannelWatched",
+            text="Channel_Watched",
             color_continuous_scale="RdYlGn_r",
             labels={
                 "Avg_TRP": "Avg TRP",
@@ -492,18 +492,18 @@ elif page == "🔬 Influence Decoder":
             unsafe_allow_html=True,
         )
         cs = (
-            fdf.groupby(["NewsCategory", "NewsVerdict"])["SentimentScore"]
+            fdf.groupby(["News_Category", "News_Verdict"])["Sentiment_Score"]
             .mean()
             .reset_index()
         )
         fig3 = px.bar(
             cs,
-            x="NewsCategory",
-            y="SentimentScore",
-            color="NewsVerdict",
+            x="News_Category",
+            y="Sentiment_Score",
+            color="News_Verdict",
             barmode="group",
             color_discrete_map=VERDICT_COLORS,
-            labels={"SentimentScore": "Avg Sentiment", "NewsCategory": ""},
+            labels={"Sentiment_Score": "Avg Sentiment", "News_Category": ""},
         )
         fig3.update_layout(
             **PLT,
@@ -518,10 +518,10 @@ elif page == "🔬 Influence Decoder":
             unsafe_allow_html=True,
         )
         ag = (
-            fdf.groupby("AgeGroup")
+            fdf.groupby("Age_Group")
             .agg(
-                Fake_Pct=("NewsVerdict", lambda x: (x == "Fake").mean() * 100),
-                Avg_Know=("KnowledgeAccuracyPct", "mean"),
+                Fake_Pct=("News_Verdict", lambda x: (x == "Fake").mean() * 100),
+                Avg_Know=("Knowledge_Accuracy_Pct", "mean"),
             )
             .reset_index()
         )
@@ -530,7 +530,7 @@ elif page == "🔬 Influence Decoder":
             ag,
             x="Fake_Pct",
             y="Avg_Know",
-            text="AgeGroup",
+            text="Age_Group",
             size="Fake_Pct",
             color="Avg_Know",
             color_continuous_scale="RdYlGn",
@@ -549,9 +549,9 @@ elif page == "🔬 Influence Decoder":
     reg2 = (
         fdf.groupby("Region")
         .agg(
-            Fake_Viewers=("NewsVerdict", lambda x: (x == "Fake").sum()),
-            Auth_Viewers=("NewsVerdict", lambda x: (x == "Authentic").sum()),
-            Avg_Trust=("TrustScore", "mean"),
+            Fake_Viewers=("News_Verdict", lambda x: (x == "Fake").sum()),
+            Auth_Viewers=("News_Verdict", lambda x: (x == "Authentic").sum()),
+            Avg_Trust=("Trust_Score", "mean"),
         )
         .reset_index()
     )
@@ -602,13 +602,13 @@ elif page == "🔬 Influence Decoder":
     st.markdown("---")
     st.markdown('<div class="sec-head">💡 Auto-Detected Patterns</div>', unsafe_allow_html=True)
 
-    fake_rate_by_channel = fdf.groupby("ChannelWatched").apply(
-        lambda x: (x["NewsVerdict"] == "Fake").mean()
+    fake_rate_by_channel = fdf.groupby("Channel_Watched").apply(
+        lambda x: (x["News_Verdict"] == "Fake").mean()
     )
     worst_ch = fake_rate_by_channel.idxmax()
     best_ch = fake_rate_by_channel.idxmin()
-    worst_an = fdf.groupby("AnchorName")["SentimentScore"].mean().idxmin()
-    best_an = fdf.groupby("AnchorName")["SentimentScore"].mean().idxmax()
+    worst_an = fdf.groupby("Anchor_Name")["Sentiment_Score"].mean().idxmin()
+    best_an = fdf.groupby("Anchor_Name")["Sentiment_Score"].mean().idxmax()
 
     box("box-red", f"🚨 <b>{worst_ch}</b> has the highest fake news rate — viewers show the most negative sentiment shifts.")
     box("box-green", f"✅ <b>{best_ch}</b> leads in authentic content — viewers score highest on knowledge accuracy.")
@@ -626,10 +626,10 @@ elif page == "🔮 Viewer Intelligence":
     v1, v2, v3 = st.columns(3)
 
     with v1:
-        p_ch = st.selectbox("📺 Channel", df["ChannelWatched"].unique())
-        a_map = df.groupby("ChannelWatched")["AnchorName"].unique().to_dict()
-        p_an = st.selectbox("🎙️ Anchor", a_map.get(p_ch, df["AnchorName"].unique()))
-        p_cat = st.selectbox("📰 Category", df["NewsCategory"].unique())
+        p_ch = st.selectbox("📺 Channel", df["Channel_Watched"].unique())
+        a_map = df.groupby("Channel_Watched")["Anchor_Name"].unique().to_dict()
+        p_an = st.selectbox("🎙️ Anchor", a_map.get(p_ch, df["Anchor_Name"].unique()))
+        p_cat = st.selectbox("📰 Category", df["News_Category"].unique())
 
     with v2:
         p_freq = st.selectbox("⏱️ Watch Frequency", ["Daily", "Weekly", "Occasional"])
@@ -645,21 +645,21 @@ elif page == "🔮 Viewer Intelligence":
     st.markdown("---")
 
     try:
-        ch_e = les["ChannelWatched"].transform([p_ch])[0]
-        an_e = les["AnchorName"].transform([p_an])[0]
-        cat_e = les["NewsCategory"].transform([p_cat])[0]
-        fr_e = les["ConsumptionFrequency"].transform([p_freq])[0]
+        ch_e = les["Channel_Watched"].transform([p_ch])[0]
+        an_e = les["Anchor_Name"].transform([p_an])[0]
+        cat_e = les["News_Category"].transform([p_cat])[0]
+        fr_e = les["Consumption_Frequency"].transform([p_freq])[0]
     except Exception:
         ch_e = an_e = cat_e = fr_e = 0
 
     X_raw = np.array([[ch_e, an_e, cat_e, fr_e, p_trp, p_sens, p_fake, p_auth]])
     X_sc = sc.transform(X_raw)
 
-    pred_v = les["NewsVerdict"].inverse_transform(clf.predict(X_sc))[0]
+    pred_v = les["News_Verdict"].inverse_transform(clf.predict(X_sc))[0]
     proba = clf.predict_proba(X_sc)[0]
     pred_s = float(np.clip(reg_s.predict(X_sc)[0], -5, 5))
     pred_t = float(np.clip(reg_t.predict(X_sc)[0], 1, 10))
-    vc = les["NewsVerdict"].classes_
+    vc = les["News_Verdict"].classes_
 
     v_color = VERDICT_COLORS.get(pred_v, "#6c63ff")
     s_color = "#10b981" if pred_s > 0 else "#ef4444"
@@ -801,15 +801,15 @@ elif page == "🎯 Editorial Compass":
     st.markdown("### 🧮 Media Diet Score Calculator")
     e1, e2, e3 = st.columns(3)
 
-    my_ch = e1.selectbox("Your Primary Channel", df["ChannelWatched"].unique())
+    my_ch = e1.selectbox("Your Primary Channel", df["Channel_Watched"].unique())
     my_age = e2.selectbox("Your Age Group", ["18-25", "26-40", "41-60", "60+"])
     my_freq = e3.selectbox("Viewing Frequency", ["Daily", "Weekly", "Occasional"])
 
-    cd = df[df["ChannelWatched"] == my_ch]
-    fake_r = (cd["NewsVerdict"] == "Fake").mean()
-    sens_v = cd["SensationalismScore"].mean()
-    trust_v = cd["TrustScore"].mean()
-    know_v = cd["KnowledgeAccuracyPct"].mean()
+    cd = df[df["Channel_Watched"] == my_ch]
+    fake_r = (cd["News_Verdict"] == "Fake").mean()
+    sens_v = cd["Sensationalism_Score"].mean()
+    trust_v = cd["Trust_Score"].mean()
+    know_v = cd["Knowledge_Accuracy_Pct"].mean()
 
     fm = {"Daily": 1.3, "Weekly": 1.0, "Occasional": 0.7}[my_freq]
     mds = max(0, min(100, (100 - fake_r * 100 * 0.4 - sens_v * 2.5 + trust_v * 3 + know_v * 0.3) * fm / 1.1))
@@ -828,11 +828,11 @@ elif page == "🎯 Editorial Compass":
     with l1:
         st.markdown('<div class="sec-head">🏆 Channel Trust Leaderboard</div>', unsafe_allow_html=True)
         ch_lb = (
-            df.groupby("ChannelWatched")
+            df.groupby("Channel_Watched")
             .agg(
-                Trust=("TrustScore", "mean"),
-                Authentic_Rate=("NewsVerdict", lambda x: (x == "Authentic").mean() * 100),
-                Knowledge=("KnowledgeAccuracyPct", "mean"),
+                Trust=("Trust_Score", "mean"),
+                Authentic_Rate=("News_Verdict", lambda x: (x == "Authentic").mean() * 100),
+                Knowledge=("Knowledge_Accuracy_Pct", "mean"),
             )
             .round(1)
             .reset_index()
@@ -846,7 +846,7 @@ elif page == "🎯 Editorial Compass":
         st.dataframe(
             ch_lb.rename(
                 columns={
-                    "ChannelWatched": "Channel",
+                    "Channel_Watched": "Channel",
                     "Trust": "Trust /10",
                     "Authentic_Rate": "Authentic %",
                     "Knowledge": "Knowledge %",
@@ -859,11 +859,11 @@ elif page == "🎯 Editorial Compass":
     with l2:
         st.markdown('<div class="sec-head">🎙️ Anchor Integrity Scores</div>', unsafe_allow_html=True)
         an_int = (
-            df.groupby("AnchorName")
+            df.groupby("Anchor_Name")
             .agg(
-                Trust=("TrustScore", "mean"),
-                Sentiment=("SentimentScore", "mean"),
-                Fake_Rate=("NewsVerdict", lambda x: (x == "Fake").mean() * 100),
+                Trust=("Trust_Score", "mean"),
+                Sentiment=("Sentiment_Score", "mean"),
+                Fake_Rate=("News_Verdict", lambda x: (x == "Fake").mean() * 100),
             )
             .round(2)
             .reset_index()
@@ -875,11 +875,11 @@ elif page == "🎯 Editorial Compass":
 
         fig_i = px.bar(
             an_int,
-            x="AnchorName",
+            x="Anchor_Name",
             y="Integrity",
             color="Integrity",
             color_continuous_scale="RdYlGn",
-            labels={"AnchorName": "", "Integrity": "Integrity Score"},
+            labels={"Anchor_Name": "", "Integrity": "Integrity Score"},
             text="Integrity",
         )
         fig_i.update_layout(**PLT, height=290, coloraxis_showscale=False, xaxis=dict(tickangle=15))
@@ -888,8 +888,8 @@ elif page == "🎯 Editorial Compass":
     st.markdown("---")
     st.markdown('<div class="sec-head">📋 Your Personalised Action Plan</div>', unsafe_allow_html=True)
 
-    best_overall_ch = df.groupby("ChannelWatched")["TrustScore"].mean().idxmax()
-    best_overall_an = df.groupby("AnchorName")["TrustScore"].mean().idxmax()
+    best_overall_ch = df.groupby("Channel_Watched")["Trust_Score"].mean().idxmax()
+    best_overall_an = df.groupby("Anchor_Name")["Trust_Score"].mean().idxmax()
 
     if fake_r > 0.40:
         box(
