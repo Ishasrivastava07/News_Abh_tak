@@ -25,32 +25,71 @@ st.set_page_config(
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown(
     """
-<style>
-[data-testid="stAppViewContainer"] { background:#0f1117; }
-[data-testid="stSidebar"]          { background:#13151f; }
-.metric-card {
-    background:linear-gradient(135deg,#1e2130,#252840);
-    border-radius:12px; padding:18px; text-align:center;
-    border-left:4px solid #6c63ff; margin-bottom:10px;
-}
-.metric-value { font-size:1.9rem; font-weight:700; color:#6c63ff; }
-.metric-label { font-size:0.82rem; color:#9ca3af; margin-top:4px; }
-.sec-head {
-    font-size:1.2rem; font-weight:700; color:#e2e8f0;
-    border-bottom:2px solid #6c63ff;
-    padding-bottom:6px; margin:18px 0 12px 0;
-}
-.box-green  { background:#0d2b1f; border-left:4px solid #10b981;
-              padding:10px 14px; border-radius:8px; color:#d1fae5;
-              font-size:.88rem; margin:6px 0; }
-.box-yellow { background:#2b1f0d; border-left:4px solid #f59e0b;
-              padding:10px 14px; border-radius:8px; color:#fef3c7;
-              font-size:.88rem; margin:6px 0; }
-.box-red    { background:#2b0d0d; border-left:4px solid #ef4444;
-              padding:10px 14px; border-radius:8px; color:#fee2e2;
-              font-size:.88rem; margin:6px 0; }
-</style>
-""",
+    <style>
+    [data-testid="stAppViewContainer"] { background:#0f1117; }
+    [data-testid="stSidebar"] { background:#13151f; }
+
+    .metric-card {
+        background: linear-gradient(135deg, #1e2130, #252840);
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+        border-left: 4px solid #6c63ff;
+        margin-bottom: 10px;
+    }
+
+    .metric-value {
+        font-size: 1.9rem;
+        font-weight: 700;
+        color: #6c63ff;
+    }
+
+    .metric-label {
+        font-size: 0.82rem;
+        color: #9ca3af;
+        margin-top: 4px;
+    }
+
+    .sec-head {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        border-bottom: 2px solid #6c63ff;
+        padding-bottom: 6px;
+        margin: 18px 0 12px 0;
+    }
+
+    .box-green {
+        background: #0d2b1f;
+        border-left: 4px solid #10b981;
+        padding: 10px 14px;
+        border-radius: 8px;
+        color: #d1fae5;
+        font-size: .88rem;
+        margin: 6px 0;
+    }
+
+    .box-yellow {
+        background: #2b1f0d;
+        border-left: 4px solid #f59e0b;
+        padding: 10px 14px;
+        border-radius: 8px;
+        color: #fef3c7;
+        font-size: .88rem;
+        margin: 6px 0;
+    }
+
+    .box-red {
+        background: #2b0d0d;
+        border-left: 4px solid #ef4444;
+        padding: 10px 14px;
+        border-radius: 8px;
+        color: #fee2e2;
+        font-size: .88rem;
+        margin: 6px 0;
+    }
+    </style>
+    """,
     unsafe_allow_html=True,
 )
 
@@ -93,6 +132,17 @@ def box(cls, html):
     st.markdown(f'<div class="{cls}">{html}</div>', unsafe_allow_html=True)
 
 
+def render_deck(layers, view_state, tooltip):
+    st.pydeck_chart(
+        pdk.Deck(
+            layers=layers,
+            initial_view_state=view_state,
+            tooltip=tooltip,
+            map_style=None,
+        )
+    )
+
+
 # ── DATA ──────────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
@@ -120,11 +170,12 @@ def train_models(df):
         "News_Category",
         "Consumption_Frequency",
     ]
-    les = {c: LabelEncoder() for c in encode_cols}
 
+    les = {c: LabelEncoder() for c in encode_cols}
     df2 = df.copy()
+
     for c, le in les.items():
-        df2[c + "_enc"] = le.fit_transform(df2[c])
+        df2[f"{c}_enc"] = le.fit_transform(df2[c])
 
     feats = [
         "Channel_Watched_enc",
@@ -167,7 +218,7 @@ clf, reg_s, reg_t, les, sc, acc = train_models(df)
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 📡 News Integrity\\nMonitor")
+    st.markdown("## 📡 News Integrity\nMonitor")
     st.markdown("---")
 
     page = st.radio(
@@ -189,12 +240,15 @@ with st.sidebar:
         df["Channel_Watched"].unique().tolist(),
         default=df["Channel_Watched"].unique().tolist(),
     )
+
     sel_an = st.multiselect(
         "Anchor",
         df["Anchor_Name"].unique().tolist(),
         default=df["Anchor_Name"].unique().tolist(),
     )
+
     sel_yr = st.slider("Year Range", 2022, 2025, (2022, 2025))
+
     sel_cat = st.multiselect(
         "Category",
         df["News_Category"].unique().tolist(),
@@ -252,12 +306,14 @@ if page == "🏠 Media Pulse":
 
     with r1c2:
         st.markdown('<div class="sec-head">📺 Fake News Rate by Channel</div>', unsafe_allow_html=True)
+
         ch_fake = (
             fdf.groupby("Channel_Watched")
             .apply(lambda x: (x["News_Verdict"] == "Fake").mean() * 100)
             .reset_index(name="Fake_Rate")
             .sort_values("Fake_Rate")
         )
+
         fig2 = px.bar(
             ch_fake,
             x="Fake_Rate",
@@ -274,16 +330,17 @@ if page == "🏠 Media Pulse":
 
     with r2c1:
         st.markdown('<div class="sec-head">📅 Monthly Sentiment Trend</div>', unsafe_allow_html=True)
-        m = (
+
+        monthly_sent = (
             fdf.groupby("Month_dt")["Sentiment_Score"]
             .mean()
             .reset_index()
             .sort_values("Month_dt")
         )
-        m["lbl"] = m["Month_dt"].dt.strftime("%b %y")
+        monthly_sent["lbl"] = monthly_sent["Month_dt"].dt.strftime("%b %y")
 
         fig3 = px.line(
-            m,
+            monthly_sent,
             x="lbl",
             y="Sentiment_Score",
             labels={"Sentiment_Score": "Avg Sentiment", "lbl": ""},
@@ -306,6 +363,7 @@ if page == "🏠 Media Pulse":
 
     with r2c2:
         st.markdown('<div class="sec-head">🎙️ Avg News Units by Anchor</div>', unsafe_allow_html=True)
+
         anc = (
             fdf.groupby("Anchor_Name")[["Fake_Units_Consumed", "Authentic_Units_Consumed"]]
             .mean()
@@ -367,9 +425,7 @@ if page == "🏠 Media Pulse":
             reg_stats["Fake_Rate"] / max_fake * 180
         ).fillna(60).astype(int)
 
-    reg_stats["color"] = reg_stats.apply(
-        lambda row: [239, 68, 68, int(row["opacity"])], axis=1
-    )
+    reg_stats["color"] = reg_stats["opacity"].apply(lambda x: [239, 68, 68, int(x)])
 
     layer = pdk.Layer(
         "ScatterplotLayer",
@@ -402,14 +458,7 @@ if page == "🏠 Media Pulse":
         },
     }
 
-    st.pydeck_chart(
-        pdk.Deck(
-            layers=[layer, text_layer],
-            initial_view_state=view,
-            tooltip=tooltip,
-            map_style=None,
-        )
-    )
+    render_deck([layer, text_layer], view, tooltip)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE 2 — INFLUENCE DECODER
@@ -422,6 +471,7 @@ elif page == "🔬 Influence Decoder":
 
     with d1:
         st.markdown('<div class="sec-head">🔥 Correlation Matrix</div>', unsafe_allow_html=True)
+
         num_cols = [
             "TRP_Score",
             "Sensationalism_Score",
@@ -455,6 +505,7 @@ elif page == "🔬 Influence Decoder":
             '<div class="sec-head">📡 TRP vs Fake News — Channel Bubble</div>',
             unsafe_allow_html=True,
         )
+
         bs = (
             fdf.groupby("Channel_Watched")
             .agg(
@@ -491,11 +542,13 @@ elif page == "🔬 Influence Decoder":
             '<div class="sec-head">😨 Sentiment by Category × Verdict</div>',
             unsafe_allow_html=True,
         )
+
         cs = (
             fdf.groupby(["News_Category", "News_Verdict"])["Sentiment_Score"]
             .mean()
             .reset_index()
         )
+
         fig3 = px.bar(
             cs,
             x="News_Category",
@@ -517,6 +570,7 @@ elif page == "🔬 Influence Decoder":
             '<div class="sec-head">🧑‍🤝‍🧑 Knowledge Gap by Age Group</div>',
             unsafe_allow_html=True,
         )
+
         ag = (
             fdf.groupby("Age_Group")
             .agg(
@@ -590,14 +644,7 @@ elif page == "🔬 Influence Decoder":
         "style": {"background": "#1e2130", "color": "white", "padding": "8px"},
     }
 
-    st.pydeck_chart(
-        pdk.Deck(
-            layers=[fake_layer, auth_layer],
-            initial_view_state=view2,
-            tooltip=tooltip2,
-            map_style=None,
-        )
-    )
+    render_deck([fake_layer, auth_layer], view2, tooltip2)
 
     st.markdown("---")
     st.markdown('<div class="sec-head">💡 Auto-Detected Patterns</div>', unsafe_allow_html=True)
@@ -605,6 +652,7 @@ elif page == "🔬 Influence Decoder":
     fake_rate_by_channel = fdf.groupby("Channel_Watched").apply(
         lambda x: (x["News_Verdict"] == "Fake").mean()
     )
+
     worst_ch = fake_rate_by_channel.idxmax()
     best_ch = fake_rate_by_channel.idxmin()
     worst_an = fdf.groupby("Anchor_Name")["Sentiment_Score"].mean().idxmin()
@@ -659,7 +707,7 @@ elif page == "🔮 Viewer Intelligence":
     proba = clf.predict_proba(X_sc)[0]
     pred_s = float(np.clip(reg_s.predict(X_sc)[0], -5, 5))
     pred_t = float(np.clip(reg_t.predict(X_sc)[0], 1, 10))
-    vc = les["News_Verdict"].classes_
+    verdict_classes = les["News_Verdict"].classes_
 
     v_color = VERDICT_COLORS.get(pred_v, "#6c63ff")
     s_color = "#10b981" if pred_s > 0 else "#ef4444"
@@ -667,7 +715,7 @@ elif page == "🔮 Viewer Intelligence":
 
     pr1, pr2, pr3, pr4 = st.columns(4)
     card(pr1, pred_v, "Predicted News Type", v_color)
-    card(pr2, f"{pred_s:+.2f}", "Sentiment  (−5 to +5)", s_color)
+    card(pr2, f"{pred_s:+.2f}", "Sentiment (-5 to +5)", s_color)
     card(pr3, f"{pred_t:.1f}/10", "Trust Score", t_color)
     card(pr4, f"{max(proba) * 100:.0f}%", "Model Confidence", "#6c63ff")
 
@@ -675,7 +723,11 @@ elif page == "🔮 Viewer Intelligence":
 
     with pc1:
         st.markdown('<div class="sec-head">📊 Verdict Probability</div>', unsafe_allow_html=True)
-        prob_df = pd.DataFrame({"Verdict": vc, "Probability": proba * 100})
+
+        prob_df = pd.DataFrame(
+            {"Verdict": verdict_classes, "Probability": proba * 100}
+        )
+
         fig_p = px.bar(
             prob_df,
             x="Verdict",
@@ -690,6 +742,7 @@ elif page == "🔮 Viewer Intelligence":
 
     with pc2:
         st.markdown('<div class="sec-head">🌡️ Emotional State Gauge</div>', unsafe_allow_html=True)
+
         fig_g = go.Figure(
             go.Indicator(
                 mode="gauge+number+delta",
@@ -735,22 +788,22 @@ elif page == "🔮 Viewer Intelligence":
 
     st.markdown("---")
     st.markdown(
-        "<div class=\\"sec-head\\">🗺️ Viewer's Predicted Emotional Zone — India Map</div>",
+        '<div class="sec-head">🗺️ Viewer Predicted Emotional Zone — India Map</div>',
         unsafe_allow_html=True,
     )
 
     all_reg = pd.DataFrame(
         [
             {
-                "Region": r,
-                "lat": v["lat"],
-                "lon": v["lon"],
-                "city": v["city"],
+                "Region": region,
+                "lat": meta["lat"],
+                "lon": meta["lon"],
+                "city": meta["city"],
                 "Pred_Sentiment": pred_s,
                 "radius": abs(pred_s) * 50000 + 120000,
                 "color": [16, 185, 129, 120] if pred_s > 0 else [239, 68, 68, 120],
             }
-            for r, v in REGION_COORDS.items()
+            for region, meta in REGION_COORDS.items()
         ]
     )
 
@@ -777,19 +830,13 @@ elif page == "🔮 Viewer Intelligence":
 
     view3 = pdk.ViewState(latitude=22.5, longitude=80.0, zoom=3.6, pitch=0)
     sentiment_label = "Positive 😊" if pred_s > 0 else "Negative 😟"
+
     tooltip3 = {
         "html": f"<b>{{city}}</b><br/>Predicted Sentiment: <b>{pred_s:+.2f}</b> ({sentiment_label})",
         "style": {"background": "#1e2130", "color": "white", "padding": "8px"},
     }
 
-    st.pydeck_chart(
-        pdk.Deck(
-            layers=[pulse_layer, txt_layer],
-            initial_view_state=view3,
-            tooltip=tooltip3,
-            map_style=None,
-        )
-    )
+    render_deck([pulse_layer, txt_layer], view3, tooltip3)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE 4 — EDITORIAL COMPASS
@@ -812,7 +859,15 @@ elif page == "🎯 Editorial Compass":
     know_v = cd["Knowledge_Accuracy_Pct"].mean()
 
     fm = {"Daily": 1.3, "Weekly": 1.0, "Occasional": 0.7}[my_freq]
-    mds = max(0, min(100, (100 - fake_r * 100 * 0.4 - sens_v * 2.5 + trust_v * 3 + know_v * 0.3) * fm / 1.1))
+    mds = max(
+        0,
+        min(
+            100,
+            (100 - fake_r * 100 * 0.4 - sens_v * 2.5 + trust_v * 3 + know_v * 0.3)
+            * fm
+            / 1.1,
+        ),
+    )
     mdc = "#10b981" if mds >= 60 else "#f59e0b" if mds >= 40 else "#ef4444"
 
     st.markdown("---")
@@ -827,6 +882,7 @@ elif page == "🎯 Editorial Compass":
 
     with l1:
         st.markdown('<div class="sec-head">🏆 Channel Trust Leaderboard</div>', unsafe_allow_html=True)
+
         ch_lb = (
             df.groupby("Channel_Watched")
             .agg(
@@ -839,6 +895,7 @@ elif page == "🎯 Editorial Compass":
             .sort_values("Trust", ascending=False)
             .reset_index(drop=True)
         )
+
         ch_lb.index += 1
         medals = {1: "🥇", 2: "🥈", 3: "🥉"}
         ch_lb.insert(0, "#", [medals.get(i, "") for i in ch_lb.index])
@@ -858,6 +915,7 @@ elif page == "🎯 Editorial Compass":
 
     with l2:
         st.markdown('<div class="sec-head">🎙️ Anchor Integrity Scores</div>', unsafe_allow_html=True)
+
         an_int = (
             df.groupby("Anchor_Name")
             .agg(
@@ -868,9 +926,11 @@ elif page == "🎯 Editorial Compass":
             .round(2)
             .reset_index()
         )
+
         an_int["Integrity"] = (
             an_int["Trust"] * 4 + an_int["Sentiment"] * 6 - an_int["Fake_Rate"] * 0.3
         ).round(1)
+
         an_int = an_int.sort_values("Integrity", ascending=False)
 
         fig_i = px.bar(
@@ -882,7 +942,12 @@ elif page == "🎯 Editorial Compass":
             labels={"Anchor_Name": "", "Integrity": "Integrity Score"},
             text="Integrity",
         )
-        fig_i.update_layout(**PLT, height=290, coloraxis_showscale=False, xaxis=dict(tickangle=15))
+        fig_i.update_layout(
+            **PLT,
+            height=290,
+            coloraxis_showscale=False,
+            xaxis=dict(tickangle=15),
+        )
         st.plotly_chart(fig_i, use_container_width=True)
 
     st.markdown("---")
@@ -896,16 +961,19 @@ elif page == "🎯 Editorial Compass":
             "box-red",
             f"🔴 <b>Switch Channel:</b> {my_ch} has a {fake_r * 100:.1f}% fake news rate. Try <b>{best_overall_ch}</b> instead.",
         )
+
     if sens_v > 7:
         box(
             "box-yellow",
             f"🟡 <b>Sensationalism Trap:</b> {my_ch} scores {sens_v:.1f}/10 — headlines are engineered to trigger fear. Pause before reacting.",
         )
+
     if my_freq == "Daily" and fake_r > 0.35:
         box(
             "box-red",
             "🔴 <b>Reduce Frequency:</b> Daily consumption of high-fake channels compounds emotional damage. Switch to weekly curated reading.",
         )
+
     if my_age in ["18-25", "60+"]:
         box(
             "box-yellow",
@@ -929,9 +997,11 @@ elif page == "🎯 Editorial Compass":
     st.markdown('<div class="sec-head">🔄 Sentiment Recovery Simulator</div>', unsafe_allow_html=True)
 
     sr1, sr2 = st.columns(2)
+
     with sr1:
         cur_f = st.slider("Fake stories/day NOW", 0, 9, 4)
         prop_f = st.slider("Fake stories/day (TARGET)", 0, 9, 1)
+
     with sr2:
         cur_a = st.slider("Authentic stories/day NOW", 0, 9, 2)
         prop_a = st.slider("Authentic stories/day (TARGET)", 0, 9, 6)
@@ -966,7 +1036,9 @@ elif page == "🎯 Editorial Compass":
     )
     st.plotly_chart(fig_sim, use_container_width=True)
 
-    ds, dk = ps - cs, pk - ck
+    ds = ps - cs
+    dk = pk - ck
+
     if ds > 0:
         box(
             "box-green",
